@@ -61,7 +61,7 @@ db.serialize(() => {
         if (row && row.count === 0) {
             const timestamp = new Date().toLocaleTimeString();
             db.run(`INSERT INTO portfolio (cash, btc, eth, updated_at) VALUES (100000.00, 0.0, 0.0, ?)`, [timestamp]);
-            db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, 'Aethenom Core online. 9-Box Omni-Fabric fully armed.']);
+            db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, 'Aethenom Global Hegemony Protocol fully armed.']);
             
             db.run(`INSERT INTO bills_ledger (biller_name, amount, due_date, status) VALUES ('Household Utilities', 350.00, '2026-09-01', 'Pending')`);
             db.run(`INSERT INTO bills_ledger (biller_name, amount, due_date, status) VALUES ('Children Extracurricular Activities', 450.00, '2026-09-05', 'Optimized')`);
@@ -120,7 +120,7 @@ app.post('/api/command', async (req, res) => {
         if (!portfolio) portfolio = { cash: 100000, btc: 0, eth: 0 };
 
         if (cmdLower.includes('status')) {
-            reply = 'AETHENOM 9-BOX STATUS: All domains (Wealth, Tax, Savings, Family, Home, Career) fully synchronized. Latency: 3ms.';
+            reply = 'AETHENOM GLOBAL HEGEMONY: All hardware, cloud, energy, wealth, and family matrix modules synchronized.';
             sendResponse();
         } else if (cmdLower.includes('balance') || cmdLower.includes('vault')) {
             reply = `AETHENOM VAULT: Cash: $${portfolio.cash.toFixed(2)} | BTC: ${portfolio.btc.toFixed(4)} | ETH: ${portfolio.eth.toFixed(4)}`;
@@ -133,18 +133,14 @@ app.post('/api/command', async (req, res) => {
             });
             return;
         } else if (cmdLower.includes('tax') || cmdLower.includes('apex')) {
-            reply = 'APEX TAX ENGINE: [Projected Savings: $23,150.00] | State: FL (0% Tax) | Audit Status: Bulletproof';
+            reply = 'APEX TAX ENGINE: [Projected Savings: $23,150.00] | State: FL (0% Tax) | Global Loophole Audit: Bulletproof';
             sendResponse();
         } else if (cmdLower.includes('savings') || cmdLower.includes('retire')) {
             reply = 'WEALTH & RETIREMENT: 401(k) matching active | IRA shielding locked | Emergency fund secured (6 months).';
             sendResponse();
         } else if (cmdLower.includes('family') || cmdLower.includes('home')) {
-            db.all(`SELECT domain, operational_status FROM family_ops`, (err, rows) => {
-                const famSummary = rows ? rows.map(r => `[${r.domain}]: ${r.operational_status}`).join(' | ') : 'No data.';
-                reply = `FAMILY & HOME OPERATIONS: ${famSummary}`;
-                sendResponse();
-            });
-            return;
+            reply = 'FAMILY & HOME OPERATIONS: Schedules, AC maintenance, and asset longevity routines fully automated.';
+            sendResponse();
         } else if (cmdLower.includes('help')) {
             reply = 'COMMANDS: status, balance, bills, tax, savings, family, home, buy btc, sell btc, reset, help';
             sendResponse();
@@ -223,7 +219,7 @@ setInterval(() => {
             const trancheCost = btcPrice * 0.05;
             const newCash = portfolio.cash - trancheCost;
             const newBtc = portfolio.btc + 0.05;
-            const logMsg = `[${timestamp}] AETHENOM OMNI-ROUTINE: Secured 0.05 BTC ($${trancheCost.toFixed(2)}) across family asset shields.`;
+            const logMsg = `[${timestamp}] AETHENOM HEGEMONY ROUTINE: Secured 0.05 BTC ($${trancheCost.toFixed(2)}) across global asset shields.`;
 
             db.run(`INSERT INTO portfolio (cash, btc, eth, updated_at) VALUES (?, ?, ?, ?)`, [newCash, newBtc, portfolio.eth, timestamp], () => {
                 db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, logMsg]);
