@@ -17,7 +17,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
     else console.log('Aethenom core connected to SQLite database.');
 });
 
-// Setup pristine database tables for portfolio, logs, and transaction audit trails
+// Setup pristine database tables for portfolio, logs, bills, and transaction audit trails
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS portfolio (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,12 +33,25 @@ db.serialize(() => {
         message TEXT
     )`);
 
-    // Seed initial portfolio state if uninitialized
+    // New Omnibus Bill & Expense Tracking Ledger for Complete Financial Autonomy
+    db.run(`CREATE TABLE IF NOT EXISTS bills_ledger (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        biller_name TEXT,
+        amount REAL,
+        due_date TEXT,
+        status TEXT
+    )`);
+
+    // Seed initial portfolio & baseline recurring family expenses if uninitialized
     db.get(`SELECT COUNT(*) as count FROM portfolio`, (err, row) => {
         if (row && row.count === 0) {
             const timestamp = new Date().toLocaleTimeString();
             db.run(`INSERT INTO portfolio (cash, btc, eth, updated_at) VALUES (100000.00, 0.0, 0.0, ?)`, [timestamp]);
-            db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, 'Aethenom Core online. Financial telemetry & automated risk loops armed.']);
+            db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, 'Aethenom Core online. Universal financial & bill telemetry armed.']);
+            
+            // Initial seed tracking for family financial optimization
+            db.run(`INSERT INTO bills_ledger (biller_name, amount, due_date, status) VALUES ('Household Utilities', 350.00, '2026-09-01', 'Pending')`);
+            db.run(`INSERT INTO bills_ledger (biller_name, amount, due_date, status) VALUES ('Children Extracurricular Activities', 450.00, '2026-09-05', 'Optimized')`);
         }
     });
 });
@@ -63,15 +76,18 @@ app.get('/api/crypto-prices', async (req, res) => {
     }
 });
 
-// Fetch live system state, balances, and audit logs
+// Fetch live system state, balances, bills, and audit logs
 app.get('/api/system-state', (req, res) => {
     db.get(`SELECT cash, btc, eth FROM portfolio ORDER BY id DESC LIMIT 1`, (err, portfolio) => {
         db.all(`SELECT message FROM event_logs ORDER BY id DESC LIMIT 10`, (err, logs) => {
-            const eventLogs = logs ? logs.reverse().map(l => l.message) : [];
-            res.json({ 
-                status: 'success', 
-                portfolio: portfolio || { cash: 100000, btc: 0, eth: 0 }, 
-                eventLogs 
+            db.all(`SELECT biller_name, amount, due_date, status FROM bills_ledger`, (err, bills) => {
+                const eventLogs = logs ? logs.reverse().map(l => l.message) : [];
+                res.json({ 
+                    status: 'success', 
+                    portfolio: portfolio || { cash: 100000, btc: 0, eth: 0 }, 
+                    eventLogs,
+                    bills: bills || []
+                });
             });
         });
     });
@@ -88,13 +104,20 @@ app.post('/api/command', async (req, res) => {
         if (!portfolio) portfolio = { cash: 100000, btc: 0, eth: 0 };
 
         if (cmdLower.includes('status')) {
-            reply = 'AETHENOM STATUS: All systems nominal. Risk matrix secure. Latency: 12ms.';
+            reply = 'AETHENOM STATUS: Omni-ledger active. Family asset protection nominal. Latency: 9ms.';
             sendResponse();
-        } else if (cmdLower.includes('balance')) {
+        } else if (cmdLower.includes('balance') || cmdLower.includes('vault')) {
             reply = `AETHENOM VAULT: Cash: $${portfolio.cash.toFixed(2)} | BTC: ${portfolio.btc.toFixed(4)} | ETH: ${portfolio.eth.toFixed(4)}`;
             sendResponse();
+        } else if (cmdLower.includes('bills')) {
+            db.all(`SELECT biller_name, amount FROM bills_ledger`, (err, rows) => {
+                const billSummary = rows ? rows.map(r => `${r.biller_name}: $${r.amount}`).join(' | ') : 'No pending bills.';
+                reply = `ACTIVE LIABILITIES: ${billSummary}`;
+                sendResponse();
+            });
+            return;
         } else if (cmdLower.includes('help')) {
-            reply = 'COMMANDS: status, balance, buy btc, sell btc, reset, help';
+            reply = 'COMMANDS: status, balance, bills, buy btc, sell btc, reset, help';
             sendResponse();
         } else if (cmdLower.startsWith('buy btc')) {
             const btcPrice = 78428.00;
@@ -134,7 +157,7 @@ app.post('/api/command', async (req, res) => {
                 sendResponse();
             }
         } else if (cmdLower.includes('reset')) {
-            const logMsg = `[${timestamp}] SYSTEM RESET: Portfolio restored to baseline baseline liquidity.`;
+            const logMsg = `[${timestamp}] SYSTEM RESET: Portfolio restored to baseline liquidity.`;
             db.run(`INSERT INTO portfolio (cash, btc, eth, updated_at) VALUES (100000.00, 0.0, 0.0, ?)`, [timestamp], () => {
                 db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, logMsg], () => {
                     reply = 'VAULT RESET: Balance restored to $100,000.00 USD.';
@@ -167,13 +190,12 @@ setInterval(() => {
     db.get(`SELECT id, cash, btc, eth FROM portfolio ORDER BY id DESC LIMIT 1`, (err, portfolio) => {
         if (!portfolio) return;
 
-        // Smart asset accumulation logic when cash exceeds threshold
         if (portfolio.cash > 50000) {
             const btcPrice = 78428.00;
             const trancheCost = btcPrice * 0.05;
             const newCash = portfolio.cash - trancheCost;
             const newBtc = portfolio.btc + 0.05;
-            const logMsg = `[${timestamp}] AETHENOM ALGO: Momentum threshold met. Allocated 0.05 BTC ($${trancheCost.toFixed(2)}) into vault.`;
+            const logMsg = `[${timestamp}] AETHENOM ALGO: Capital growth allocated. Secured 0.05 BTC ($${trancheCost.toFixed(2)}) for family portfolio.`;
 
             db.run(`INSERT INTO portfolio (cash, btc, eth, updated_at) VALUES (?, ?, ?, ?)`, [newCash, newBtc, portfolio.eth, timestamp], () => {
                 db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, logMsg]);
