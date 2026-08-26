@@ -12,13 +12,15 @@
         .status-badge { background: rgba(0, 255, 102, 0.1); border: 1px solid #00ff66; padding: 5px 10px; font-size: 0.8rem; box-shadow: 0 0 8px rgba(0,255,102,0.3); }
         .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin-top: 20px; }
         .terminal-panel { background: #0a0a12; border: 1px solid #00ff66; border-radius: 4px; padding: 15px; box-shadow: inset 0 0 15px rgba(0,255,102,0.05), 0 0 10px rgba(0,255,102,0.1); }
+        /* High-contrast background specifically for Box 3 so it is fully visible */
+        .command-panel { background: #121222; border: 2px solid #00ffaa; border-radius: 4px; padding: 15px; box-shadow: 0 0 15px rgba(0,255,170,0.3); }
         h2 { font-size: 1rem; border-bottom: 1px dashed #00ff66; padding-bottom: 8px; margin-bottom: 12px; color: #00ffaa; }
         .metric-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; }
         .label { color: #88cc99; }
         .value { font-weight: bold; color: #fff; text-shadow: 0 0 5px rgba(255,255,255,0.5); }
-        .log-box { background: #000; border: 1px solid #114422; padding: 10px; height: 160px; overflow-y: auto; font-size: 0.75rem; color: #00cc55; margin-top: 10px; }
+        .log-box { background: #000; border: 1px solid #114422; padding: 10px; height: 140px; overflow-y: auto; font-size: 0.75rem; color: #00cc55; margin-top: 10px; }
         .search-box-wrapper { display: flex; gap: 10px; margin-top: 10px; }
-        input[type="text"] { flex: 1; background: #000; border: 1px solid #00ff66; color: #00ff66; padding: 10px; font-family: 'Courier New', Courier, monospace; outline: none; font-size: 0.9rem; }
+        input[type="text"] { flex: 1; background: #000; border: 1px solid #00ffaa; color: #00ffaa; padding: 10px; font-family: 'Courier New', Courier, monospace; outline: none; font-size: 0.9rem; }
         button { background: #00ff66; color: #000; border: none; padding: 10px 20px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0,255,102,0.4); transition: 0.2s; }
         button:hover { background: #00cc55; box-shadow: 0 0 15px rgba(0,255,102,0.8); }
     </style>
@@ -66,15 +68,15 @@
             </div>
         </div>
 
-        <!-- BOX 3: COMMAND & QUERY CONSOLE -->
-        <div class="terminal-panel">
+        <!-- BOX 3: COMMAND & QUERY CONSOLE (High Contrast) -->
+        <div class="command-panel">
             <h2>💬 3. COMMAND & QUERY CONSOLE</h2>
-            <p style="font-size: 0.8rem; color: #88cc99; margin-bottom: 10px;">Type commands or queries below:</p>
+            <p style="font-size: 0.8rem; color: #aaffcc; margin-bottom: 8px;">Type commands or queries below:</p>
             <div class="search-box-wrapper">
                 <input type="text" id="terminal-search-input" placeholder="/status, /trade, etc..." onkeydown="handleSearchKey(event)">
                 <button onclick="executeSearchTerminal()">SEND</button>
             </div>
-            <div class="log-box" id="search-terminal-logs" style="height: 105px;">
+            <div class="log-box" id="search-terminal-logs">
                 [Console Ready] Awaiting user command...<br>
             </div>
         </div>
@@ -82,7 +84,7 @@
         <!-- BOX 4: SYSTEM EVENT LOGS -->
         <div class="terminal-panel">
             <h2>🖥️ 4. SYSTEM EVENT LOGS</h2>
-            <div class="log-box" id="event-logs" style="height: 165px;">
+            <div class="log-box" id="event-logs" style="height: 180px;">
                 [11:12:00] Initializing core socket connection...<br>
                 [11:12:02] Express server successfully mounted.<br>
                 [11:12:05] Secure route established with CoinGecko feed.<br>
