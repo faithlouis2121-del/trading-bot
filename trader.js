@@ -4,20 +4,15 @@ const sqlite3 = require('sqlite3').verbose();
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Middleware to parse JSON bodies
 app.use(express.json());
-
-// Serve static assets
 app.use(express.static(__dirname));
 
-// Initialize Aethenom Core SQLite Database
 const dbPath = path.resolve(__dirname, 'trading.db');
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) console.error('Aethenom DB initialization error: ' + err.message);
     else console.log('Aethenom core connected to SQLite database.');
 });
 
-// Setup pristine database tables for portfolio, logs, bills, tax compliance, and wealth planning
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS portfolio (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,7 +44,6 @@ db.serialize(() => {
         last_sync TEXT
     )`);
 
-    // New Wealth Planning & Savings Automation Ledger
     db.run(`CREATE TABLE IF NOT EXISTS wealth_planning (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         category TEXT,
@@ -57,12 +51,17 @@ db.serialize(() => {
         status TEXT
     )`);
 
-    // Seed initial system state and long-term financial strategies if uninitialized
+    db.run(`CREATE TABLE IF NOT EXISTS family_ops (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        domain TEXT,
+        operational_status TEXT
+    )`);
+
     db.get(`SELECT COUNT(*) as count FROM portfolio`, (err, row) => {
         if (row && row.count === 0) {
             const timestamp = new Date().toLocaleTimeString();
             db.run(`INSERT INTO portfolio (cash, btc, eth, updated_at) VALUES (100000.00, 0.0, 0.0, ?)`, [timestamp]);
-            db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, 'Aethenom Core online. Wealth Planning & Savings Automation engines armed.']);
+            db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, 'Aethenom Core online. 9-Box Omni-Fabric fully armed.']);
             
             db.run(`INSERT INTO bills_ledger (biller_name, amount, due_date, status) VALUES ('Household Utilities', 350.00, '2026-09-01', 'Pending')`);
             db.run(`INSERT INTO bills_ledger (biller_name, amount, due_date, status) VALUES ('Children Extracurricular Activities', 450.00, '2026-09-05', 'Optimized')`);
@@ -70,10 +69,11 @@ db.serialize(() => {
             db.run(`INSERT INTO apex_tax_engine (optimization_vector, potential_savings, audit_status, last_sync) VALUES ('Florida 0% Personal Income Tax Structuring', 14200.00, 'Bulletproof', '2026-08-26')`);
             db.run(`INSERT INTO apex_tax_engine (optimization_vector, potential_savings, audit_status, last_sync) VALUES ('AI Infrastructure & Cloud Asset Write-Offs', 8950.00, 'Verified Loophole', '2026-08-26')`);
 
-            // Seed Core Savings & Retirement Strategies
             db.run(`INSERT INTO wealth_planning (category, strategy_detail, status) VALUES ('Core Savings', 'Automatic monthly transfers & emergency liquidity (6 mos locked)', 'Active')`);
             db.run(`INSERT INTO wealth_planning (category, strategy_detail, status) VALUES ('Retirement Accounts', 'Pre-tax 401(k) matching & independent IRA tax shielding', 'Optimized')`);
-            db.run(`INSERT INTO wealth_planning (category, strategy_detail, status) VALUES ('Long-Term Planning', 'Annual milestone review & Department of Labor timeline mapping', 'Tracked')`);
+
+            db.run(`INSERT INTO family_ops (domain, operational_status) VALUES ('Family Administration', 'Chris, Arabella, Evalena, Oliviana, & Theo schedules synchronized')`);
+            db.run(`INSERT INTO family_ops (domain, operational_status) VALUES ('Home Asset Longevity', 'AC condensate lines, shop-vac clearing, and pool landscaping monitored')`);
         }
     });
 });
@@ -82,7 +82,6 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Real-time market feed endpoint
 app.get('/api/crypto-prices', async (req, res) => {
     try {
         const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd', {
@@ -98,30 +97,19 @@ app.get('/api/crypto-prices', async (req, res) => {
     }
 });
 
-// Fetch live system state, balances, bills, tax logs, and wealth planning modules
 app.get('/api/system-state', (req, res) => {
     db.get(`SELECT cash, btc, eth FROM portfolio ORDER BY id DESC LIMIT 1`, (err, portfolio) => {
         db.all(`SELECT message FROM event_logs ORDER BY id DESC LIMIT 10`, (err, logs) => {
-            db.all(`SELECT biller_name, amount, due_date, status FROM bills_ledger`, (err, bills) => {
-                db.all(`SELECT optimization_vector, potential_savings, audit_status FROM apex_tax_engine`, (err, taxEngine) => {
-                    db.all(`SELECT category, strategy_detail, status FROM wealth_planning`, (err, wealthPlans) => {
-                        const eventLogs = logs ? logs.reverse().map(l => l.message) : [];
-                        res.json({ 
-                            status: 'success', 
-                            portfolio: portfolio || { cash: 100000, btc: 0, eth: 0 }, 
-                            eventLogs,
-                            bills: bills || [],
-                            taxEngine: taxEngine || [],
-                            wealthPlans: wealthPlans || []
-                        });
-                    });
-                });
+            const eventLogs = logs ? logs.reverse().map(l => l.message) : [];
+            res.json({ 
+                status: 'success', 
+                portfolio: portfolio || { cash: 100000, btc: 0, eth: 0 }, 
+                eventLogs
             });
         });
     });
 });
 
-// Command Console Router
 app.post('/api/command', async (req, res) => {
     const { command } = req.body;
     let reply = `Executed command: ${command}`;
@@ -132,7 +120,7 @@ app.post('/api/command', async (req, res) => {
         if (!portfolio) portfolio = { cash: 100000, btc: 0, eth: 0 };
 
         if (cmdLower.includes('status')) {
-            reply = 'AETHENOM STATUS: Wealth planning, savings automation, and tax shields fully synchronized. Latency: 4ms.';
+            reply = 'AETHENOM 9-BOX STATUS: All domains (Wealth, Tax, Savings, Family, Home, Career) fully synchronized. Latency: 3ms.';
             sendResponse();
         } else if (cmdLower.includes('balance') || cmdLower.includes('vault')) {
             reply = `AETHENOM VAULT: Cash: $${portfolio.cash.toFixed(2)} | BTC: ${portfolio.btc.toFixed(4)} | ETH: ${portfolio.eth.toFixed(4)}`;
@@ -145,21 +133,20 @@ app.post('/api/command', async (req, res) => {
             });
             return;
         } else if (cmdLower.includes('tax') || cmdLower.includes('apex')) {
-            db.all(`SELECT optimization_vector, potential_savings FROM apex_tax_engine`, (err, rows) => {
-                const totalSavings = rows ? rows.reduce((acc, r) => acc + r.potential_savings, 0) : 0;
-                reply = `APEX TAX ENGINE: [Projected Savings: $${totalSavings.toLocaleString()}] | State: FL (0% Tax)`;
-                sendResponse();
-            });
-            return;
-        } else if (cmdLower.includes('savings') || cmdLower.includes('retire') || cmdLower.includes('goals')) {
-            db.all(`SELECT category, strategy_detail FROM wealth_planning`, (err, rows) => {
-                const wealthSummary = rows ? rows.map(r => `[${r.category}]: ${r.strategy_detail}`).join(' | ') : 'No plans active.';
-                reply = `WEALTH & RETIREMENT MATRIX: ${wealthSummary}`;
+            reply = 'APEX TAX ENGINE: [Projected Savings: $23,150.00] | State: FL (0% Tax) | Audit Status: Bulletproof';
+            sendResponse();
+        } else if (cmdLower.includes('savings') || cmdLower.includes('retire')) {
+            reply = 'WEALTH & RETIREMENT: 401(k) matching active | IRA shielding locked | Emergency fund secured (6 months).';
+            sendResponse();
+        } else if (cmdLower.includes('family') || cmdLower.includes('home')) {
+            db.all(`SELECT domain, operational_status FROM family_ops`, (err, rows) => {
+                const famSummary = rows ? rows.map(r => `[${r.domain}]: ${r.operational_status}`).join(' | ') : 'No data.';
+                reply = `FAMILY & HOME OPERATIONS: ${famSummary}`;
                 sendResponse();
             });
             return;
         } else if (cmdLower.includes('help')) {
-            reply = 'COMMANDS: status, balance, bills, tax, savings, retire, buy btc, sell btc, reset, help';
+            reply = 'COMMANDS: status, balance, bills, tax, savings, family, home, buy btc, sell btc, reset, help';
             sendResponse();
         } else if (cmdLower.startsWith('buy btc')) {
             const btcPrice = 78428.00;
@@ -226,7 +213,6 @@ app.post('/api/command', async (req, res) => {
     }
 });
 
-// AUTONOMOUS BACKGROUND WEALTH GENERATOR (Runs every 45 seconds)
 setInterval(() => {
     const timestamp = new Date().toLocaleTimeString();
     db.get(`SELECT id, cash, btc, eth FROM portfolio ORDER BY id DESC LIMIT 1`, (err, portfolio) => {
@@ -237,7 +223,7 @@ setInterval(() => {
             const trancheCost = btcPrice * 0.05;
             const newCash = portfolio.cash - trancheCost;
             const newBtc = portfolio.btc + 0.05;
-            const logMsg = `[${timestamp}] AETHENOM WEALTH ROUTINE: Auto-saved and allocated 0.05 BTC ($${trancheCost.toFixed(2)}) into long-term vault reserve.`;
+            const logMsg = `[${timestamp}] AETHENOM OMNI-ROUTINE: Secured 0.05 BTC ($${trancheCost.toFixed(2)}) across family asset shields.`;
 
             db.run(`INSERT INTO portfolio (cash, btc, eth, updated_at) VALUES (?, ?, ?, ?)`, [newCash, newBtc, portfolio.eth, timestamp], () => {
                 db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, logMsg]);
