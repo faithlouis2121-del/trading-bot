@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vanguard Trading Terminal v1.0</title>
+    <!-- Include Chart.js for live visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace; }
         body { background-color: #05050a; color: #00ff66; padding: 20px; }
@@ -11,10 +13,12 @@
         h1 { font-size: 1.5rem; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
         .card { background: #0a0a12; border: 1px solid #00ff66; border-radius: 4px; padding: 15px; min-height: 180px; }
+        .wide-card { grid-column: span 2; }
         h2 { font-size: 0.9rem; border-bottom: 1px dashed #00ff66; padding-bottom: 5px; margin-bottom: 10px; color: #00ffaa; }
         .log { background: #000; border: 1px solid #114422; padding: 8px; height: 100px; overflow-y: auto; font-size: 0.75rem; margin-top: 8px; }
         input { width: 100%; background: #000; border: 1px solid #00ffaa; color: #00ffaa; padding: 8px; margin-top: 8px; font-family: monospace; }
         button { background: #00ff66; color: #000; border: none; padding: 8px 12px; font-weight: bold; cursor: pointer; margin-top: 8px; width: 100%; }
+        @media(max-width: 768px) { .wide-card { grid-column: span 1; } }
     </style>
 </head>
 <body>
@@ -53,16 +57,64 @@
             <h2>🖥️ 4. SYSTEM EVENT LOGS</h2>
             <div class="log" id="eventLog">Loading logs...</div>
         </div>
+
+        <!-- BOX 5: NEW VISUAL CHART PANEL -->
+        <div class="card wide-card">
+            <h2>📈 5. BTC PRICE TREND MONITOR</h2>
+            <div style="height: 160px; position: relative;">
+                <canvas id="priceChart"></canvas>
+            </div>
+        </div>
     </div>
 
     <script>
+        // Initialize Chart.js graph
+        const ctx = document.getElementById('priceChart').getContext('2d');
+        const priceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'BTC Price (USD)',
+                    data: [],
+                    borderColor: '#00ff66',
+                    backgroundColor: 'rgba(0, 255, 102, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { ticks: { color: '#00ffaa', font: { family: 'Courier New' } }, grid: { color: '#112211' } },
+                    y: { ticks: { color: '#00ffaa', font: { family: 'Courier New' } }, grid: { color: '#112211' } }
+                },
+                plugins: { legend: { labels: { color: '#00ffaa', font: { family: 'Courier New' } } } }
+            }
+        });
+
         async function fetchPrices() {
             try {
                 const res = await fetch('/api/crypto-prices');
                 const data = await res.json();
                 if(data.status === 'success' && data.prices) {
-                    document.getElementById('btc').innerText = '$' + data.prices.bitcoin.usd.toLocaleString();
-                    document.getElementById('eth').innerText = '$' + data.prices.ethereum.usd.toLocaleString();
+                    const btcVal = data.prices.bitcoin.usd;
+                    const ethVal = data.prices.ethereum.usd;
+                    
+                    document.getElementById('btc').innerText = '$' + btcVal.toLocaleString();
+                    document.getElementById('eth').innerText = '$' + ethVal.toLocaleString();
+
+                    // Push timestamp and price to chart
+                    const timeNow = new Date().toLocaleTimeString();
+                    if (priceChart.data.labels.length > 10) {
+                        priceChart.data.labels.shift();
+                        priceChart.data.datasets[0].data.shift();
+                    }
+                    priceChart.data.labels.push(timeNow);
+                    priceChart.data.datasets[0].data.push(btcVal);
+                    priceChart.update();
                 }
             } catch(e) { console.error(e); }
         }
