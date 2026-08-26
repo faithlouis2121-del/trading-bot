@@ -107,10 +107,8 @@
             
             if (!command) return;
 
-            // Log user command
             logBox.innerHTML += `[${new Date().toLocaleTimeString()}] > ${command}<br>`;
             
-            // Simple mock response handling to prepare for your flows
             if (command.toLowerCase() === '/status') {
                 logBox.innerHTML += `[${new Date().toLocaleTimeString()}] SYSTEM NORMAL: All modules operational.<br>`;
             } else {
@@ -121,7 +119,6 @@
             logBox.scrollTop = logBox.scrollHeight;
         }
 
-        // Fetch prices on load and every 30 seconds
         fetchCryptoPrices();
         setInterval(fetchCryptoPrices, 30000);
     </script>
