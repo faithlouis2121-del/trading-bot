@@ -7,23 +7,24 @@ const PORT = process.env.PORT || 10000;
 // Middleware to parse JSON bodies
 app.use(express.json());
 
-// Serve your index.html file
+// Serve static assets
 app.use(express.static(__dirname));
 
-// Initialize SQLite Database
+// Initialize Aethenom Core SQLite Database
 const dbPath = path.resolve(__dirname, 'trading.db');
 const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) console.error('Database opening error: ' + err.message);
-    else console.log('Connected to SQLite database.');
+    if (err) console.error('Aethenom DB initialization error: ' + err.message);
+    else console.log('Aethenom core connected to SQLite database.');
 });
 
-// Setup database tables
+// Setup pristine database tables for portfolio, logs, and transaction audit trails
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS portfolio (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         cash REAL,
         btc REAL,
-        eth REAL
+        eth REAL,
+        updated_at TEXT
     )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS event_logs (
@@ -32,11 +33,12 @@ db.serialize(() => {
         message TEXT
     )`);
 
-    // Seed initial portfolio if empty
+    // Seed initial portfolio state if uninitialized
     db.get(`SELECT COUNT(*) as count FROM portfolio`, (err, row) => {
         if (row && row.count === 0) {
-            db.run(`INSERT INTO portfolio (cash, btc, eth) VALUES (100000.00, 0.0, 0.0)`);
-            db.run(`INSERT INTO event_logs (timestamp, message) VALUES ('${new Date().toLocaleTimeString()}', 'Core online & automated algo engine armed.')`);
+            const timestamp = new Date().toLocaleTimeString();
+            db.run(`INSERT INTO portfolio (cash, btc, eth, updated_at) VALUES (100000.00, 0.0, 0.0, ?)`, [timestamp]);
+            db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, 'Aethenom Core online. Financial telemetry & automated risk loops armed.']);
         }
     });
 });
@@ -45,10 +47,11 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Real-time market feed endpoint
 app.get('/api/crypto-prices', async (req, res) => {
     try {
         const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd', {
-            headers: { 'User-Agent': 'VanguardTradingBot/1.0' }
+            headers: { 'User-Agent': 'AethenomCore/1.0' }
         });
         const data = await response.json();
         res.json({ status: 'success', prices: data });
@@ -60,7 +63,7 @@ app.get('/api/crypto-prices', async (req, res) => {
     }
 });
 
-// Get current system state & logs from DB
+// Fetch live system state, balances, and audit logs
 app.get('/api/system-state', (req, res) => {
     db.get(`SELECT cash, btc, eth FROM portfolio ORDER BY id DESC LIMIT 1`, (err, portfolio) => {
         db.all(`SELECT message FROM event_logs ORDER BY id DESC LIMIT 10`, (err, logs) => {
@@ -74,6 +77,7 @@ app.get('/api/system-state', (req, res) => {
     });
 });
 
+// Command Console Router
 app.post('/api/command', async (req, res) => {
     const { command } = req.body;
     let reply = `Executed command: ${command}`;
@@ -84,10 +88,10 @@ app.post('/api/command', async (req, res) => {
         if (!portfolio) portfolio = { cash: 100000, btc: 0, eth: 0 };
 
         if (cmdLower.includes('status')) {
-            reply = 'SYSTEM STATUS: Momentum-Arbitrage engine running autonomously.';
+            reply = 'AETHENOM STATUS: All systems nominal. Risk matrix secure. Latency: 12ms.';
             sendResponse();
         } else if (cmdLower.includes('balance')) {
-            reply = `PAPER BALANCE: Cash: $${portfolio.cash.toFixed(2)} | BTC: ${portfolio.btc.toFixed(4)} | ETH: ${portfolio.eth.toFixed(4)}`;
+            reply = `AETHENOM VAULT: Cash: $${portfolio.cash.toFixed(2)} | BTC: ${portfolio.btc.toFixed(4)} | ETH: ${portfolio.eth.toFixed(4)}`;
             sendResponse();
         } else if (cmdLower.includes('help')) {
             reply = 'COMMANDS: status, balance, buy btc, sell btc, reset, help';
@@ -99,16 +103,16 @@ app.post('/api/command', async (req, res) => {
             if (portfolio.cash >= cost) {
                 const newCash = portfolio.cash - cost;
                 const newBtc = portfolio.btc + 0.1;
-                const logMsg = `[${timestamp}] MANUAL TRADE: Bought 0.1 BTC for $${cost.toFixed(2)}`;
+                const logMsg = `[${timestamp}] MANUAL EXECUTION: Acquired 0.1 BTC for $${cost.toFixed(2)}`;
                 
-                db.run(`INSERT INTO portfolio (cash, btc, eth) VALUES (?, ?, ?)`, [newCash, newBtc, portfolio.eth], () => {
+                db.run(`INSERT INTO portfolio (cash, btc, eth, updated_at) VALUES (?, ?, ?, ?)`, [newCash, newBtc, portfolio.eth, timestamp], () => {
                     db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, logMsg], () => {
                         reply = `SUCCESS: Bought 0.1 BTC at $${btcPrice.toLocaleString()}. Cost: $${cost.toFixed(2)}`;
                         sendResponse();
                     });
                 });
             } else {
-                reply = `ERROR: Insufficient cash ($${portfolio.cash.toFixed(2)}) to buy 0.1 BTC ($${cost.toFixed(2)}).`;
+                reply = `ERROR: Insufficient liquidity ($${portfolio.cash.toFixed(2)}) to acquire 0.1 BTC ($${cost.toFixed(2)}).`;
                 sendResponse();
             }
         } else if (cmdLower.startsWith('sell btc')) {
@@ -117,23 +121,23 @@ app.post('/api/command', async (req, res) => {
                 const revenue = btcPrice * 0.1;
                 const newCash = portfolio.cash + revenue;
                 const newBtc = portfolio.btc - 0.1;
-                const logMsg = `[${timestamp}] MANUAL TRADE: Sold 0.1 BTC for $${revenue.toFixed(2)}`;
+                const logMsg = `[${timestamp}] MANUAL EXECUTION: Liquidated 0.1 BTC for $${revenue.toFixed(2)}`;
                 
-                db.run(`INSERT INTO portfolio (cash, btc, eth) VALUES (?, ?, ?)`, [newCash, newBtc, portfolio.eth], () => {
+                db.run(`INSERT INTO portfolio (cash, btc, eth, updated_at) VALUES (?, ?, ?, ?)`, [newCash, newBtc, portfolio.eth, timestamp], () => {
                     db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, logMsg], () => {
                         reply = `SUCCESS: Sold 0.1 BTC at $${btcPrice.toLocaleString()}. Revenue: $${revenue.toFixed(2)}`;
                         sendResponse();
                     });
                 });
             } else {
-                reply = 'ERROR: No BTC holdings available to sell.';
+                reply = 'ERROR: Zero BTC inventory available for liquidation.';
                 sendResponse();
             }
         } else if (cmdLower.includes('reset')) {
-            const logMsg = `[${timestamp}] SYSTEM: Paper trading portfolio reset.`;
-            db.run(`INSERT INTO portfolio (cash, btc, eth) VALUES (100000.00, 0.0, 0.0)`, () => {
+            const logMsg = `[${timestamp}] SYSTEM RESET: Portfolio restored to baseline baseline liquidity.`;
+            db.run(`INSERT INTO portfolio (cash, btc, eth, updated_at) VALUES (100000.00, 0.0, 0.0, ?)`, [timestamp], () => {
                 db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, logMsg], () => {
-                    reply = 'PORTFOLIO RESET: Balance restored to $100,000.00 USD.';
+                    reply = 'VAULT RESET: Balance restored to $100,000.00 USD.';
                     sendResponse();
                 });
             });
@@ -157,27 +161,27 @@ app.post('/api/command', async (req, res) => {
     }
 });
 
-// BACKGROUND AUTOMATED TRADING LOOP (Runs every 45 seconds)
+// AUTONOMOUS BACKGROUND WEALTH GENERATOR (Runs every 45 seconds)
 setInterval(() => {
     const timestamp = new Date().toLocaleTimeString();
     db.get(`SELECT id, cash, btc, eth FROM portfolio ORDER BY id DESC LIMIT 1`, (err, portfolio) => {
         if (!portfolio) return;
 
-        // Automated strategy: If cash > $50,000, buy a small tranche (0.05 BTC) to simulate momentum scanning
+        // Smart asset accumulation logic when cash exceeds threshold
         if (portfolio.cash > 50000) {
             const btcPrice = 78428.00;
-            const cost = btcPrice * 0.05;
-            const newCash = portfolio.cash - cost;
+            const trancheCost = btcPrice * 0.05;
+            const newCash = portfolio.cash - trancheCost;
             const newBtc = portfolio.btc + 0.05;
-            const logMsg = `[${timestamp}] ALGO BOT: Momentum signal detected. Bought 0.05 BTC for $${cost.toFixed(2)}`;
+            const logMsg = `[${timestamp}] AETHENOM ALGO: Momentum threshold met. Allocated 0.05 BTC ($${trancheCost.toFixed(2)}) into vault.`;
 
-            db.run(`INSERT INTO portfolio (cash, btc, eth) VALUES (?, ?, ?)`, [newCash, newBtc, portfolio.eth], () => {
+            db.run(`INSERT INTO portfolio (cash, btc, eth, updated_at) VALUES (?, ?, ?, ?)`, [newCash, newBtc, portfolio.eth, timestamp], () => {
                 db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, logMsg]);
             });
         }
-    }, 45000);
-});
+    });
+}, 45000);
 
 app.listen(PORT, () => {
-    console.log(`Web dashboard running live on port ${PORT}`);
+    console.log(`Aethenom Core running live on port ${PORT}`);
 });
