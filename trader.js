@@ -28,7 +28,9 @@ app.get('/', (req, res) => {
 
 app.get('/api/crypto-prices', async (req, res) => {
     try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd');
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd', {
+            headers: { 'User-Agent': 'VanguardTradingBot/1.0' }
+        });
         const data = await response.json();
         res.json({ status: 'success', prices: data });
     } catch (err) {
@@ -56,7 +58,9 @@ app.post('/api/command', async (req, res) => {
         reply = 'COMMANDS: status, balance, buy btc, sell btc, reset, help';
     } else if (cmdLower.startsWith('buy btc')) {
         try {
-            const priceRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+            const priceRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd', {
+                headers: { 'User-Agent': 'VanguardTradingBot/1.0' }
+            });
             const priceData = await priceRes.json();
             const btcPrice = priceData.bitcoin.usd;
             const cost = btcPrice * 0.1; // Buy 0.1 BTC
@@ -75,7 +79,9 @@ app.post('/api/command', async (req, res) => {
     } else if (cmdLower.startsWith('sell btc')) {
         if (portfolio.btc >= 0.1) {
             try {
-                const priceRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+                const priceRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd', {
+                    headers: { 'User-Agent': 'VanguardTradingBot/1.0' }
+                });
                 const priceData = await priceRes.json();
                 const btcPrice = priceData.bitcoin.usd;
                 const revenue = btcPrice * 0.1;
