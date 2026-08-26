@@ -12,7 +12,7 @@
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
         .card { background: #0a0a12; border: 1px solid #00ff66; border-radius: 4px; padding: 15px; min-height: 180px; }
         h2 { font-size: 0.9rem; border-bottom: 1px dashed #00ff66; padding-bottom: 5px; margin-bottom: 10px; color: #00ffaa; }
-        .metric { display: flex; justify-content: margin-bottom: 8px; font-size: 0.9rem; }
+        .metric { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; }
         .log { background: #000; border: 1px solid #114422; padding: 8px; height: 100px; overflow-y: auto; font-size: 0.75rem; margin-top: 8px; }
         input { width: 100%; background: #000; border: 1px solid #00ffaa; color: #00ffaa; padding: 8px; margin-top: 8px; font-family: monospace; }
         button { background: #00ff66; color: #000; border: none; padding: 8px 12px; font-weight: bold; cursor: pointer; margin-top: 8px; width: 100%; }
@@ -59,28 +59,47 @@
     <script>
         async function fetchPrices() {
             try {
+                document.getElementById('btc').innerText = 'Loading...';
+                document.getElementById('eth').innerText = 'Loading...';
+                
                 const res = await fetch('/api/crypto-prices');
                 const data = await res.json();
-                if(data.status === 'success') {
-                    document.getElementById('btc').innerText = '$' + data.prices.bitcoin.usd;
-                    document.getElementById('eth').innerText = '$' + data.prices.ethereum.usd;
+                
+                if(data.status === 'success' && data.prices) {
+                    document.getElementById('btc').innerText = '$' + data.prices.bitcoin.usd.toLocaleString();
+                    document.getElementById('eth').innerText = '$' + data.prices.ethereum.usd.toLocaleString();
                 }
-            } catch(e) { console.error(e); }
+            } catch(e) { 
+                console.error(e);
+                document.getElementById('btc').innerText = 'Error';
+                document.getElementById('eth').innerText = 'Error';
+            }
         }
+
         async function sendCmd() {
             const input = document.getElementById('cmdInput');
             const log = document.getElementById('cmdLog');
             if(!input.value) return;
             log.innerHTML += `> ${input.value}<br>`;
-            const res = await fetch('/api/command', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({command: input.value})
-            });
-            const data = await res.json();
-            log.innerHTML += `${data.reply}<br>`;
+            try {
+                const res = await fetch('/api/command', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({command: input.value})
+                });
+                const data = await res.json();
+                log.innerHTML += `${data.reply}<br>`;
+            } catch(e) {
+                log.innerHTML += `Error executing command.<br>`;
+            }
             input.value = '';
+            log.scrollTop = log.scrollHeight;
         }
+
+        // Auto-refresh prices every 30 seconds
+        setInterval(fetchPrices, 30000);
+        
+        // Fetch immediately on load
         fetchPrices();
     </script>
 </body>
