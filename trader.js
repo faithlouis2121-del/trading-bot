@@ -10,7 +10,7 @@ app.use(express.json());
 // Serve your index.html file
 app.use(express.static(__dirname));
 
-// Initialize SQLite Database (creates a local file persistent on disk)
+// Initialize SQLite Database
 const dbPath = path.resolve(__dirname, 'trading.db');
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) console.error('Database opening error: ' + err.message);
@@ -36,7 +36,7 @@ db.serialize(() => {
     db.get(`SELECT COUNT(*) as count FROM portfolio`, (err, row) => {
         if (row && row.count === 0) {
             db.run(`INSERT INTO portfolio (cash, btc, eth) VALUES (100000.00, 0.0, 0.0)`);
-            db.run(`INSERT INTO event_logs (timestamp, message) VALUES ('${new Date().toLocaleTimeString()}', 'Core online & database initialized.')`);
+            db.run(`INSERT INTO event_logs (timestamp, message) VALUES ('${new Date().toLocaleTimeString()}', 'Core online & automated algo engine armed.')`);
         }
     });
 });
@@ -84,7 +84,7 @@ app.post('/api/command', async (req, res) => {
         if (!portfolio) portfolio = { cash: 100000, btc: 0, eth: 0 };
 
         if (cmdLower.includes('status')) {
-            reply = 'SYSTEM STATUS: All engines nominal. Momentum-Arbitrage active. Latency: 14ms.';
+            reply = 'SYSTEM STATUS: Momentum-Arbitrage engine running autonomously.';
             sendResponse();
         } else if (cmdLower.includes('balance')) {
             reply = `PAPER BALANCE: Cash: $${portfolio.cash.toFixed(2)} | BTC: ${portfolio.btc.toFixed(4)} | ETH: ${portfolio.eth.toFixed(4)}`;
@@ -92,14 +92,14 @@ app.post('/api/command', async (req, res) => {
         } else if (cmdLower.includes('help')) {
             reply = 'COMMANDS: status, balance, buy btc, sell btc, reset, help';
             sendResponse();
-        } else if (cmdLower.startsWith('buy bts') || cmdLower.startsWith('buy btc')) {
+        } else if (cmdLower.startsWith('buy btc')) {
             const btcPrice = 78428.00;
             const cost = btcPrice * 0.1;
             
             if (portfolio.cash >= cost) {
                 const newCash = portfolio.cash - cost;
                 const newBtc = portfolio.btc + 0.1;
-                const logMsg = `[${timestamp}] TRADE: Bought 0.1 BTC for $${cost.toFixed(2)}`;
+                const logMsg = `[${timestamp}] MANUAL TRADE: Bought 0.1 BTC for $${cost.toFixed(2)}`;
                 
                 db.run(`INSERT INTO portfolio (cash, btc, eth) VALUES (?, ?, ?)`, [newCash, newBtc, portfolio.eth], () => {
                     db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, logMsg], () => {
@@ -117,7 +117,7 @@ app.post('/api/command', async (req, res) => {
                 const revenue = btcPrice * 0.1;
                 const newCash = portfolio.cash + revenue;
                 const newBtc = portfolio.btc - 0.1;
-                const logMsg = `[${timestamp}] TRADE: Sold 0.1 BTC for $${revenue.toFixed(2)}`;
+                const logMsg = `[${timestamp}] MANUAL TRADE: Sold 0.1 BTC for $${revenue.toFixed(2)}`;
                 
                 db.run(`INSERT INTO portfolio (cash, btc, eth) VALUES (?, ?, ?)`, [newCash, newBtc, portfolio.eth], () => {
                     db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, logMsg], () => {
@@ -155,6 +155,27 @@ app.post('/api/command', async (req, res) => {
             });
         });
     }
+});
+
+// BACKGROUND AUTOMATED TRADING LOOP (Runs every 45 seconds)
+setInterval(() => {
+    const timestamp = new Date().toLocaleTimeString();
+    db.get(`SELECT id, cash, btc, eth FROM portfolio ORDER BY id DESC LIMIT 1`, (err, portfolio) => {
+        if (!portfolio) return;
+
+        // Automated strategy: If cash > $50,000, buy a small tranche (0.05 BTC) to simulate momentum scanning
+        if (portfolio.cash > 50000) {
+            const btcPrice = 78428.00;
+            const cost = btcPrice * 0.05;
+            const newCash = portfolio.cash - cost;
+            const newBtc = portfolio.btc + 0.05;
+            const logMsg = `[${timestamp}] ALGO BOT: Momentum signal detected. Bought 0.05 BTC for $${cost.toFixed(2)}`;
+
+            db.run(`INSERT INTO portfolio (cash, btc, eth) VALUES (?, ?, ?)`, [newCash, newBtc, portfolio.eth], () => {
+                db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, logMsg]);
+            });
+        }
+    }, 45000);
 });
 
 app.listen(PORT, () => {
