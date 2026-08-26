@@ -37,7 +37,6 @@ db.serialize(() => {
         status TEXT
     )`);
 
-    // Omniscient Knowledge & Self-Creation Ledger
     db.run(`CREATE TABLE IF NOT EXISTS synthesized_knowledge (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         domain TEXT,
@@ -52,7 +51,6 @@ db.serialize(() => {
             db.run(`INSERT INTO portfolio (cash, btc, eth, updated_at) VALUES (100000.00, 0.0, 0.0, ?)`, [timestamp]);
             db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, 'Aethenom Omniscient Historical Matrix & Autonomous Generator Initialized.']);
             
-            // Seed foundational global histories for self-learning
             db.run(`INSERT INTO synthesized_knowledge (domain, historical_baseline, autonomous_innovation, status) VALUES ('Semiconductors & AI', 'Nvidia/TSMC micro-architecture scaling up to 2026', 'Self-optimizing nanometer wafer layout algorithms', 'Active Synthesis')`);
             db.run(`INSERT INTO synthesized_knowledge (domain, historical_baseline, autonomous_innovation, status) VALUES ('Global Financial Hegemony', 'Berkshire compounding & sovereign energy arbitrage', 'Decentralized automated cross-asset liquidity tunneling', 'Compounding')`);
             db.run(`INSERT INTO synthesized_knowledge (domain, historical_baseline, autonomous_innovation, status) VALUES ('Enterprise & Life Operations', 'Multi-tenant cloud architectures and family admin protocols', 'Zero-latency neural domestic & corporate synchronization swarm', 'Autonomous Evolution')`);
@@ -93,6 +91,30 @@ app.get('/api/system-state', (req, res) => {
             });
         });
     });
+});
+
+// Bulk Ingestion Endpoint for Voiceflow Code Migration
+app.post('/api/ingest-code', (req, res) => {
+    const { domain, historical_baseline, autonomous_innovation } = req.body;
+    const timestamp = new Date().toLocaleTimeString();
+
+    if (!domain || !autonomous_innovation) {
+        return res.status(400).json({ status: 'error', message: 'Missing domain or code content.' });
+    }
+
+    db.run(
+        `INSERT INTO synthesized_knowledge (domain, historical_baseline, autonomous_innovation, status) VALUES (?, ?, ?, 'Voiceflow Integrated')`,
+        [domain, historical_baseline || 'Migrated from Voiceflow development session', autonomous_innovation],
+        function(err) {
+            if (err) {
+                return res.status(500).json({ status: 'error', message: err.message });
+            }
+            db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, 
+                [timestamp, `[MIGRATION] Ingested Voiceflow module into [${domain}] matrix.`]);
+            
+            res.json({ status: 'success', message: `Successfully merged Voiceflow module into Aethenom core under ID ${this.lastID}` });
+        }
+    );
 });
 
 app.post('/api/command', async (req, res) => {
@@ -189,7 +211,6 @@ app.post('/api/command', async (req, res) => {
     }
 });
 
-// AUTONOMOUS SELF-CREATION & EVOLUTION LOOP (Runs every 40 seconds)
 setInterval(async () => {
     const timestamp = new Date().toLocaleTimeString();
     try {
