@@ -1,12 +1,13 @@
 {
-  "name": "trading-bot",
+  "name": "vanguard-trading-bot",
   "version": "1.0.0",
-  "description": "Vanguard Trading Terminal",
+  "description": "Algorithmic Trading Dashboard",
   "main": "trader.js",
   "scripts": {
     "start": "node trader.js"
   },
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.19.2",
+    "sqlite3": "^5.1.7"
   }
 }
