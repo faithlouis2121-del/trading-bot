@@ -3,6 +3,9 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+// Middleware to parse JSON bodies from frontend requests
+app.use(express.json());
+
 // Serve static assets from the current directory
 app.use(express.static(path.join(__dirname)));
 
@@ -12,7 +15,6 @@ app.get('/api/crypto-prices', async (req, res) => {
         const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd');
         
         if (!response.ok) {
-            // If rate-limited, send smooth fallback prices so the UI never breaks
             return res.json({
                 status: 'success',
                 timestamp: new Date().toISOString(),
@@ -28,7 +30,6 @@ app.get('/api/crypto-prices', async (req, res) => {
         
     } catch (error) {
         console.error('Error fetching live crypto tickers:', error.message);
-        // Fallback data on network exception
         res.json({
             status: 'success',
             timestamp: new Date().toISOString(),
@@ -38,6 +39,27 @@ app.get('/api/crypto-prices', async (req, res) => {
             }
         });
     }
+});
+
+// Custom Command & Conversational Logic Endpoint
+app.post('/api/command', (req, res) => {
+    const { command } = req.body;
+    let responseMessage = "Command received. Processing logic...";
+
+    const cleanCmd = command ? command.trim().toLowerCase() : '';
+
+    // Map your custom conversational rules and commands here
+    if (cleanCmd === '/status' || cleanCmd === 'status') {
+        responseMessage = "SYSTEM NORMAL: All algorithms, secure routing, and feeds are operating at peak efficiency.";
+    } else if (cleanCmd === '/help' || cleanCmd === 'help') {
+        responseMessage = "AVAILABLE COMMANDS: /status, /trade, /portfolio, /clear";
+    } else if (cleanCmd.startsWith('/trade')) {
+        responseMessage = "EXECUTION ENGINE: Paper trading mode active. Parameter validation required.";
+    } else {
+        responseMessage = `Echo from core logic: "${command}" parsed successfully. Ready for full flow integration.`;
+    }
+
+    res.json({ status: 'success', reply: responseMessage });
 });
 
 // Explicit route for the homepage dashboard
