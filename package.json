@@ -1,4 +1,11 @@
 {
+  "name": "trading-bot",
+  "version": "1.0.0",
+  "description": "Algorithmic Trading Dashboard and Vanguard Archive",
+  "main": "trader.js",
+  "scripts": {
+    "start": "node trader.js"
+  },
   "dependencies": {
     "express": "^5.2.1"
   }
