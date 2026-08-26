@@ -3,97 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vanguard Archive & Trading Terminal</title>
+    <title>Vanguard Trading Terminal v1.0</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace; }
-        body { background-color: #05050a; color: #00ff66; padding: 20px; overflow-x: hidden; }
-        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #00ff66; padding-bottom: 15px; text-shadow: 0 0 10px rgba(0,255,102,0.5); }
-        h1 { font-size: 1.5rem; letter-spacing: 2px; }
-        .status-badge { background: rgba(0, 255, 102, 0.1); border: 1px solid #00ff66; padding: 5px 10px; font-size: 0.8rem; box-shadow: 0 0 8px rgba(0,255,102,0.3); }
-        .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
-        .terminal-panel { background: #0a0a12; border: 1px solid #00ff66; border-radius: 4px; padding: 15px; box-shadow: inset 0 0 15px rgba(0,255,102,0.05), 0 0 10px rgba(0,255,102,0.1); }
-        h2 { font-size: 1rem; border-bottom: 1px dashed #00ff66; padding-bottom: 8px; margin-bottom: 12px; color: #00ffaa; }
-        .metric-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; }
-        .label { color: #88cc99; }
-        .value { font-weight: bold; color: #fff; text-shadow: 0 0 5px rgba(255,255,255,0.5); }
-        .log-box { background: #000; border: 1px solid #114422; padding: 10px; height: 180px; overflow-y: auto; font-size: 0.75rem; color: #00cc55; margin-top: 10px; }
-        button { background: #00ff66; color: #000; border: none; padding: 8px 15px; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; box-shadow: 0 0 10px rgba(0,255,102,0.4); transition: 0.2s; }
-        button:hover { background: #00cc55; box-shadow: 0 0 15px rgba(0,255,102,0.8); }
+        body { background-color: #05050a; color: #00ff66; padding: 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #00ff66; padding-bottom: 15px; }
+        h1 { font-size: 1.5rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
+        .card { background: #0a0a12; border: 1px solid #00ff66; border-radius: 4px; padding: 15px; min-height: 180px; }
+        h2 { font-size: 0.9rem; border-bottom: 1px dashed #00ff66; padding-bottom: 5px; margin-bottom: 10px; color: #00ffaa; }
+        .metric { display: flex; justify-content: margin-bottom: 8px; font-size: 0.9rem; }
+        .log { background: #000; border: 1px solid #114422; padding: 8px; height: 100px; overflow-y: auto; font-size: 0.75rem; margin-top: 8px; }
+        input { width: 100%; background: #000; border: 1px solid #00ffaa; color: #00ffaa; padding: 8px; margin-top: 8px; font-family: monospace; }
+        button { background: #00ff66; color: #000; border: none; padding: 8px 12px; font-weight: bold; cursor: pointer; margin-top: 8px; width: 100%; }
     </style>
 </head>
 <body>
-
     <header>
         <h1>⚡ VANGUARD ALGO-TRADER v1.0</h1>
-        <div class="status-badge" id="server-status">SYSTEM: ONLINE</div>
+        <div>SYSTEM: ONLINE</div>
     </header>
 
-    <div class="grid-container">
-        <!-- Market Feed Panel -->
-        <div class="terminal-panel">
-            <h2>📊 LIVE MARKET FEEDS</h2>
-            <div class="metric-row">
-                <span class="label">Bitcoin (BTC):</span>
-                <span class="value" id="btc-price">Loading...</span>
-            </div>
-            <div class="metric-row">
-                <span class="label">Ethereum (ETH):</span>
-                <span class="value" id="eth-price">Loading...</span>
-            </div>
-            <button onclick="fetchCryptoPrices()">REFRESH TICKERS</button>
+    <div class="grid">
+        <!-- BOX 1 -->
+        <div class="card">
+            <h2>📊 1. LIVE MARKET FEEDS</h2>
+            <div style="margin-top:10px;">Bitcoin (BTC): <span id="btc" style="color:#fff;">Loading...</span></div>
+            <div style="margin-top:5px;">Ethereum (ETH): <span id="eth" style="color:#fff;">Loading...</span></div>
+            <button onclick="fetchPrices()">REFRESH TICKERS</button>
         </div>
 
-        <!-- Execution Panel -->
-        <div class="terminal-panel">
-            <h2>⚙️ ALGORITHM STATUS</h2>
-            <div class="metric-row">
-                <span class="label">Active Engine:</span>
-                <span class="value">Momentum-Arbitrage</span>
-            </div>
-            <div class="metric-row">
-                <span class="label">Execution Mode:</span>
-                <span class="value" style="color: #00ffaa;">Paper Trading</span>
-            </div>
-            <div class="metric-row">
-                <span class="label">Latency:</span>
-                <span class="value">14ms</span>
-            </div>
+        <!-- BOX 2 -->
+        <div class="card">
+            <h2>⚙️ 2. ALGORITHM STATUS</h2>
+            <div>Engine: Momentum-Arbitrage</div>
+            <div style="margin-top:5px;">Mode: Paper Trading</div>
+            <div style="margin-top:5px;">Latency: 14ms</div>
         </div>
 
-        <!-- Terminal Logs Panel -->
-        <div class="terminal-panel" style="grid-column: 1 / -1;">
-            <h2>🖥️ SYSTEM EVENT LOGS</h2>
-            <div class="log-box" id="terminal-logs">
-                [11:12:00] Initializing core socket connection...<br>
-                [11:12:02] Express server successfully mounted.<br>
-                [11:12:05] Secure route established with CoinGecko API feed.<br>
-            </div>
+        <!-- BOX 3 -->
+        <div class="card" style="border: 2px solid #00ffaa; background: #0c1218;">
+            <h2>💬 3. COMMAND CONSOLE</h2>
+            <input type="text" id="cmdInput" placeholder="Type command...">
+            <button onclick="sendCmd()">SEND COMMAND</button>
+            <div class="log" id="cmdLog">[Ready]<br></div>
+        </div>
+
+        <!-- BOX 4 -->
+        <div class="card">
+            <h2>🖥️ 4. SYSTEM EVENT LOGS</h2>
+            <div class="log" id="eventLog">[11:12:00] Core online.<br>[11:12:02] Express mounted.<br></div>
         </div>
     </div>
 
     <script>
-        async function fetchCryptoPrices() {
-            const logBox = document.getElementById('terminal-logs');
+        async function fetchPrices() {
             try {
-                const response = await fetch('/api/crypto-prices');
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    document.getElementById('btc-price').innerText = '$' + data.prices.bitcoin.usd.toLocaleString();
-                    document.getElementById('eth-price').innerText = '$' + data.prices.ethereum.usd.toLocaleString();
-                    logBox.innerHTML += `[${new Date().toLocaleTimeString()}] Market tickers updated successfully.<br>`;
-                } else {
-                    logBox.innerHTML += `[${new Date().toLocaleTimeString()}] Error parsing feed.<br>`;
+                const res = await fetch('/api/crypto-prices');
+                const data = await res.json();
+                if(data.status === 'success') {
+                    document.getElementById('btc').innerText = '$' + data.prices.bitcoin.usd;
+                    document.getElementById('eth').innerText = '$' + data.prices.ethereum.usd;
                 }
-            } catch (err) {
-                logBox.innerHTML += `[${new Date().toLocaleTimeString()}] Connection error fetching tickers.<br>`;
-            }
-            logBox.scrollTop = logBox.scrollHeight;
+            } catch(e) { console.error(e); }
         }
-
-        // Fetch prices on load and every 30 seconds
-        fetchCryptoPrices();
-        setInterval(fetchCryptoPrices, 30000);
+        async function sendCmd() {
+            const input = document.getElementById('cmdInput');
+            const log = document.getElementById('cmdLog');
+            if(!input.value) return;
+            log.innerHTML += `> ${input.value}<br>`;
+            const res = await fetch('/api/command', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({command: input.value})
+            });
+            const data = await res.json();
+            log.innerHTML += `${data.reply}<br>`;
+            input.value = '';
+        }
+        fetchPrices();
     </script>
 </body>
 </html>
