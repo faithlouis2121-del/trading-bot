@@ -4,9 +4,9 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 
 // Serve static HTML/CSS files from the root directory
-app.use(express.static('.'));
+app.use(express.static(__dirname));
 
-// Live Crypto Feed Endpoint (Phase 1 Data Stream)
+// Live Crypto Feed Endpoint
 app.get('/api/crypto-prices', async (req, res) => {
     try {
         const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd');
@@ -31,8 +31,8 @@ app.get('/api/crypto-prices', async (req, res) => {
     }
 });
 
-// Fallback route to serve index.html for any other navigation
-app.get('*', (req, res) => {
+// Explicit root route to serve index.html directly
+app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
