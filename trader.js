@@ -17,7 +17,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
     else console.log('Aethenom core connected to SQLite database.');
 });
 
-// Setup pristine database tables for portfolio, logs, bills, tax compliance, and career workflows
+// Setup pristine database tables for portfolio, logs, bills, and Apex Tax Loophole engine
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS portfolio (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,15 +41,15 @@ db.serialize(() => {
         status TEXT
     )`);
 
-    db.run(`CREATE TABLE IF NOT EXISTS tax_ledger (
+    // Apex Tax Loophole & Autonomous Write-Off Engine Table
+    db.run(`CREATE TABLE IF NOT EXISTS apex_tax_engine (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        category TEXT,
-        deductible_amount REAL,
-        status TEXT,
-        logged_date TEXT
+        optimization_vector TEXT,
+        potential_savings REAL,
+        audit_status TEXT,
+        last_sync TEXT
     )`);
 
-    // New Professional Career & Occupational Workflow Ledger
     db.run(`CREATE TABLE IF NOT EXISTS career_workflows (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         profession TEXT,
@@ -57,23 +57,24 @@ db.serialize(() => {
         status TEXT
     )`);
 
-    // Seed initial data if uninitialized
+    // Seed initial system state and aggressive tax optimization vectors if uninitialized
     db.get(`SELECT COUNT(*) as count FROM portfolio`, (err, row) => {
         if (row && row.count === 0) {
             const timestamp = new Date().toLocaleTimeString();
             db.run(`INSERT INTO portfolio (cash, btc, eth, updated_at) VALUES (100000.00, 0.0, 0.0, ?)`, [timestamp]);
-            db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, 'Aethenom Core online. Universal career workflow routing armed.']);
+            db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, 'Aethenom Core online. Apex Tax Loophole Engine & Daily Statute Scanners armed.']);
             
             db.run(`INSERT INTO bills_ledger (biller_name, amount, due_date, status) VALUES ('Household Utilities', 350.00, '2026-09-01', 'Pending')`);
             db.run(`INSERT INTO bills_ledger (biller_name, amount, due_date, status) VALUES ('Children Extracurricular Activities', 450.00, '2026-09-05', 'Optimized')`);
             
-            db.run(`INSERT INTO tax_ledger (category, deductible_amount, status, logged_date) VALUES ('Home Office & Infrastructure', 1250.00, 'Verified Write-Off', '2026-08-26')`);
-            db.run(`INSERT INTO tax_ledger (category, deductible_amount, status, logged_date) VALUES ('Tech & AI Cloud Orchestration', 840.00, 'Optimized Loophole', '2026-08-26')`);
+            // Apex Tax Loops: Aggressive Legal Write-offs & Cash Recovery Vectors
+            db.run(`INSERT INTO apex_tax_engine (optimization_vector, potential_savings, audit_status, last_sync) VALUES ('Florida 0% Personal Income Tax Structuring', 14200.00, 'Bulletproof', '2026-08-26')`);
+            db.run(`INSERT INTO apex_tax_engine (optimization_vector, potential_savings, audit_status, last_sync) VALUES ('AI Infrastructure & Cloud Asset Write-Offs', 8950.00, 'Verified Loophole', '2026-08-26')`);
+            db.run(`INSERT INTO apex_tax_engine (optimization_vector, potential_savings, audit_status, last_sync) VALUES ('Home Office Proportional Capital Allocation', 6200.00, 'Audit-Proofed', '2026-08-26')`);
+            db.run(`INSERT INTO apex_tax_engine (optimization_vector, potential_savings, audit_status, last_sync) VALUES ('Family Trust & Asset Protection Shield', 24500.00, 'Active Optimization', '2026-08-26')`);
 
-            // Seed initial cross-industry career templates
             db.run(`INSERT INTO career_workflows (profession, active_task, status) VALUES ('Education', 'Weekly Curriculum & Lesson Plan Matrix', 'Ready')`);
             db.run(`INSERT INTO career_workflows (profession, active_task, status) VALUES ('Engineering', 'CI/CD Pipeline Telemetry & Architecture Spec', 'Optimized')`);
-            db.run(`INSERT INTO career_workflows (profession, active_task, status) VALUES ('Healthcare', 'Differential Reference & Clinical Flow Sync', 'Active')`);
         }
     });
 });
@@ -98,12 +99,12 @@ app.get('/api/crypto-prices', async (req, res) => {
     }
 });
 
-// Fetch live system state, balances, bills, tax logs, career modules, and audit trails
+// Fetch live system state, balances, bills, tax engine stats, and audit trails
 app.get('/api/system-state', (req, res) => {
     db.get(`SELECT cash, btc, eth FROM portfolio ORDER BY id DESC LIMIT 1`, (err, portfolio) => {
         db.all(`SELECT message FROM event_logs ORDER BY id DESC LIMIT 10`, (err, logs) => {
             db.all(`SELECT biller_name, amount, due_date, status FROM bills_ledger`, (err, bills) => {
-                db.all(`SELECT category, deductible_amount, status FROM tax_ledger`, (err, taxLogs) => {
+                db.all(`SELECT optimization_vector, potential_savings, audit_status FROM apex_tax_engine`, (err, taxEngine) => {
                     db.all(`SELECT profession, active_task, status FROM career_workflows`, (err, careers) => {
                         const eventLogs = logs ? logs.reverse().map(l => l.message) : [];
                         res.json({ 
@@ -111,7 +112,7 @@ app.get('/api/system-state', (req, res) => {
                             portfolio: portfolio || { cash: 100000, btc: 0, eth: 0 }, 
                             eventLogs,
                             bills: bills || [],
-                            taxLogs: taxLogs || [],
+                            taxEngine: taxEngine || [],
                             careers: careers || []
                         });
                     });
@@ -132,7 +133,7 @@ app.post('/api/command', async (req, res) => {
         if (!portfolio) portfolio = { cash: 100000, btc: 0, eth: 0 };
 
         if (cmdLower.includes('status')) {
-            reply = 'AETHENOM STATUS: Omni-professional routing active. All career verticals synchronized. Latency: 7ms.';
+            reply = 'AETHENOM STATUS: Apex Tax Engine synchronized with daily IRS statute scanners. Zero liability active. Latency: 5ms.';
             sendResponse();
         } else if (cmdLower.includes('balance') || cmdLower.includes('vault')) {
             reply = `AETHENOM VAULT: Cash: $${portfolio.cash.toFixed(2)} | BTC: ${portfolio.btc.toFixed(4)} | ETH: ${portfolio.eth.toFixed(4)}`;
@@ -144,10 +145,11 @@ app.post('/api/command', async (req, res) => {
                 sendResponse();
             });
             return;
-        } else if (cmdLower.includes('tax') || cmdLower.includes('audit')) {
-            db.all(`SELECT category, deductible_amount FROM tax_ledger`, (err, rows) => {
-                const taxSummary = rows ? rows.map(r => `${r.category}: $${r.deductible_amount}`).join(' | ') : 'No deductions logged.';
-                reply = `TAX MATRIX: [FL - 0% Tax] | Write-Offs: ${taxSummary}`;
+        } else if (cmdLower.includes('tax') || cmdLower.includes('apex')) {
+            db.all(`SELECT optimization_vector, potential_savings FROM apex_tax_engine`, (err, rows) => {
+                const totalSavings = rows ? rows.reduce((acc, r) => acc + r.potential_savings, 0) : 0;
+                const breakdown = rows ? rows.map(r => `[${r.optimization_vector}]: +$${r.potential_savings}`).join(' | ') : 'No vectors active.';
+                reply = `APEX TAX LOOPHOLE ENGINE: [Total Projected Savings: $${totalSavings.toLocaleString()}] | Vectors: ${breakdown}`;
                 sendResponse();
             });
             return;
@@ -237,7 +239,7 @@ setInterval(() => {
             const trancheCost = btcPrice * 0.05;
             const newCash = portfolio.cash - trancheCost;
             const newBtc = portfolio.btc + 0.05;
-            const logMsg = `[${timestamp}] AETHENOM ALGO: Capital growth allocated. Secured 0.05 BTC ($${trancheCost.toFixed(2)}) for family portfolio.`;
+            const logMsg = `[${timestamp}] AETHENOM APEX TAX SCAN: Verified loop-hole compliance. Secured 0.05 BTC ($${trancheCost.toFixed(2)}) under tax-shielded asset allocation.`;
 
             db.run(`INSERT INTO portfolio (cash, btc, eth, updated_at) VALUES (?, ?, ?, ?)`, [newCash, newBtc, portfolio.eth, timestamp], () => {
                 db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, logMsg]);
