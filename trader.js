@@ -17,7 +17,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
     else console.log('Aethenom core connected to SQLite database.');
 });
 
-// Setup pristine database tables for portfolio, logs, bills, and tax compliance
+// Setup pristine database tables for portfolio, logs, bills, tax compliance, and career workflows
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS portfolio (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,7 +41,6 @@ db.serialize(() => {
         status TEXT
     )`);
 
-    // New Tax Compliance & Autonomous Write-Off Ledger
     db.run(`CREATE TABLE IF NOT EXISTS tax_ledger (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         category TEXT,
@@ -50,19 +49,31 @@ db.serialize(() => {
         logged_date TEXT
     )`);
 
-    // Seed initial portfolio, baseline bills, and tax compliance optimization flags if uninitialized
+    // New Professional Career & Occupational Workflow Ledger
+    db.run(`CREATE TABLE IF NOT EXISTS career_workflows (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        profession TEXT,
+        active_task TEXT,
+        status TEXT
+    )`);
+
+    // Seed initial data if uninitialized
     db.get(`SELECT COUNT(*) as count FROM portfolio`, (err, row) => {
         if (row && row.count === 0) {
             const timestamp = new Date().toLocaleTimeString();
             db.run(`INSERT INTO portfolio (cash, btc, eth, updated_at) VALUES (100000.00, 0.0, 0.0, ?)`, [timestamp]);
-            db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, 'Aethenom Core online. Tax compliance & automated write-off engine armed.']);
+            db.run(`INSERT INTO event_logs (timestamp, message) VALUES (?, ?)`, [timestamp, 'Aethenom Core online. Universal career workflow routing armed.']);
             
             db.run(`INSERT INTO bills_ledger (biller_name, amount, due_date, status) VALUES ('Household Utilities', 350.00, '2026-09-01', 'Pending')`);
             db.run(`INSERT INTO bills_ledger (biller_name, amount, due_date, status) VALUES ('Children Extracurricular Activities', 450.00, '2026-09-05', 'Optimized')`);
             
-            // Seed initial proactive tax write-off logs
             db.run(`INSERT INTO tax_ledger (category, deductible_amount, status, logged_date) VALUES ('Home Office & Infrastructure', 1250.00, 'Verified Write-Off', '2026-08-26')`);
             db.run(`INSERT INTO tax_ledger (category, deductible_amount, status, logged_date) VALUES ('Tech & AI Cloud Orchestration', 840.00, 'Optimized Loophole', '2026-08-26')`);
+
+            // Seed initial cross-industry career templates
+            db.run(`INSERT INTO career_workflows (profession, active_task, status) VALUES ('Education', 'Weekly Curriculum & Lesson Plan Matrix', 'Ready')`);
+            db.run(`INSERT INTO career_workflows (profession, active_task, status) VALUES ('Engineering', 'CI/CD Pipeline Telemetry & Architecture Spec', 'Optimized')`);
+            db.run(`INSERT INTO career_workflows (profession, active_task, status) VALUES ('Healthcare', 'Differential Reference & Clinical Flow Sync', 'Active')`);
         }
     });
 });
@@ -87,19 +98,22 @@ app.get('/api/crypto-prices', async (req, res) => {
     }
 });
 
-// Fetch live system state, balances, bills, tax logs, and audit trails
+// Fetch live system state, balances, bills, tax logs, career modules, and audit trails
 app.get('/api/system-state', (req, res) => {
     db.get(`SELECT cash, btc, eth FROM portfolio ORDER BY id DESC LIMIT 1`, (err, portfolio) => {
         db.all(`SELECT message FROM event_logs ORDER BY id DESC LIMIT 10`, (err, logs) => {
             db.all(`SELECT biller_name, amount, due_date, status FROM bills_ledger`, (err, bills) => {
                 db.all(`SELECT category, deductible_amount, status FROM tax_ledger`, (err, taxLogs) => {
-                    const eventLogs = logs ? logs.reverse().map(l => l.message) : [];
-                    res.json({ 
-                        status: 'success', 
-                        portfolio: portfolio || { cash: 100000, btc: 0, eth: 0 }, 
-                        eventLogs,
-                        bills: bills || [],
-                        taxLogs: taxLogs || []
+                    db.all(`SELECT profession, active_task, status FROM career_workflows`, (err, careers) => {
+                        const eventLogs = logs ? logs.reverse().map(l => l.message) : [];
+                        res.json({ 
+                            status: 'success', 
+                            portfolio: portfolio || { cash: 100000, btc: 0, eth: 0 }, 
+                            eventLogs,
+                            bills: bills || [],
+                            taxLogs: taxLogs || [],
+                            careers: careers || []
+                        });
                     });
                 });
             });
@@ -118,7 +132,7 @@ app.post('/api/command', async (req, res) => {
         if (!portfolio) portfolio = { cash: 100000, btc: 0, eth: 0 };
 
         if (cmdLower.includes('status')) {
-            reply = 'AETHENOM STATUS: Tax compliance active. Zero personal state tax environment optimized. Latency: 8ms.';
+            reply = 'AETHENOM STATUS: Omni-professional routing active. All career verticals synchronized. Latency: 7ms.';
             sendResponse();
         } else if (cmdLower.includes('balance') || cmdLower.includes('vault')) {
             reply = `AETHENOM VAULT: Cash: $${portfolio.cash.toFixed(2)} | BTC: ${portfolio.btc.toFixed(4)} | ETH: ${portfolio.eth.toFixed(4)}`;
@@ -133,12 +147,19 @@ app.post('/api/command', async (req, res) => {
         } else if (cmdLower.includes('tax') || cmdLower.includes('audit')) {
             db.all(`SELECT category, deductible_amount FROM tax_ledger`, (err, rows) => {
                 const taxSummary = rows ? rows.map(r => `${r.category}: $${r.deductible_amount}`).join(' | ') : 'No deductions logged.';
-                reply = `TAX OPTIMIZATION MATRIX: [State: FL - 0% Income Tax] | Active Write-Offs: ${taxSummary}`;
+                reply = `TAX MATRIX: [FL - 0% Tax] | Write-Offs: ${taxSummary}`;
+                sendResponse();
+            });
+            return;
+        } else if (cmdLower.includes('career') || cmdLower.includes('work')) {
+            db.all(`SELECT profession, active_task FROM career_workflows`, (err, rows) => {
+                const careerSummary = rows ? rows.map(r => `[${r.profession}]: ${r.active_task}`).join(' | ') : 'No active workflows.';
+                reply = `OCCUPATIONAL MATRIX: ${careerSummary}`;
                 sendResponse();
             });
             return;
         } else if (cmdLower.includes('help')) {
-            reply = 'COMMANDS: status, balance, bills, tax, buy btc, sell btc, reset, help';
+            reply = 'COMMANDS: status, balance, bills, tax, career, buy btc, sell btc, reset, help';
             sendResponse();
         } else if (cmdLower.startsWith('buy btc')) {
             const btcPrice = 78428.00;
