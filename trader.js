@@ -48,7 +48,6 @@ app.post('/api/command', (req, res) => {
 
     const cleanCmd = command ? command.trim().toLowerCase() : '';
 
-    // Map your custom conversational rules and commands here
     if (cleanCmd === '/status' || cleanCmd === 'status') {
         responseMessage = "SYSTEM NORMAL: All algorithms, secure routing, and feeds are operating at peak efficiency.";
     } else if (cleanCmd === '/help' || cleanCmd === 'help') {
@@ -62,8 +61,11 @@ app.post('/api/command', (req, res) => {
     res.json({ status: 'success', reply: responseMessage });
 });
 
-// Explicit route for the homepage dashboard
+// Explicit route for the homepage dashboard with anti-cache headers
 app.get('/', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
