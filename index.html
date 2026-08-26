@@ -12,7 +12,6 @@
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
         .card { background: #0a0a12; border: 1px solid #00ff66; border-radius: 4px; padding: 15px; min-height: 180px; }
         h2 { font-size: 0.9rem; border-bottom: 1px dashed #00ff66; padding-bottom: 5px; margin-bottom: 10px; color: #00ffaa; }
-        .metric { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; }
         .log { background: #000; border: 1px solid #114422; padding: 8px; height: 100px; overflow-y: auto; font-size: 0.75rem; margin-top: 8px; }
         input { width: 100%; background: #000; border: 1px solid #00ffaa; color: #00ffaa; padding: 8px; margin-top: 8px; font-family: monospace; }
         button { background: #00ff66; color: #000; border: none; padding: 8px 12px; font-weight: bold; cursor: pointer; margin-top: 8px; width: 100%; }
@@ -38,69 +37,82 @@
             <h2>⚙️ 2. ALGORITHM STATUS</h2>
             <div>Engine: Momentum-Arbitrage</div>
             <div style="margin-top:5px;">Mode: Paper Trading</div>
-            <div style="margin-top:5px;">Latency: 14ms</div>
+            <div id="portfolioStatus" style="margin-top:5px; color:#00ffaa;">Balance: $100,000.00</div>
         </div>
 
         <!-- BOX 3 -->
         <div class="card" style="border: 2px solid #00ffaa; background: #0c1218;">
             <h2>💬 3. COMMAND CONSOLE</h2>
-            <input type="text" id="cmdInput" placeholder="Type command...">
+            <input type="text" id="cmdInput" placeholder="Type command (e.g. buy btc)..." onkeypress="if(event.key === 'Enter') sendCmd()">
             <button onclick="sendCmd()">SEND COMMAND</button>
-            <div class="log" id="cmdLog">[Ready]<br></div>
+            <div class="log" id="cmdLog">[Ready. Type 'help' for commands]<br></div>
         </div>
 
         <!-- BOX 4 -->
         <div class="card">
             <h2>🖥️ 4. SYSTEM EVENT LOGS</h2>
-            <div class="log" id="eventLog">[11:12:00] Core online.<br>[11:12:02] Express mounted.<br></div>
+            <div class="log" id="eventLog">Loading logs...</div>
         </div>
     </div>
 
     <script>
         async function fetchPrices() {
             try {
-                document.getElementById('btc').innerText = 'Loading...';
-                document.getElementById('eth').innerText = 'Loading...';
-                
                 const res = await fetch('/api/crypto-prices');
                 const data = await res.json();
-                
                 if(data.status === 'success' && data.prices) {
                     document.getElementById('btc').innerText = '$' + data.prices.bitcoin.usd.toLocaleString();
                     document.getElementById('eth').innerText = '$' + data.prices.ethereum.usd.toLocaleString();
                 }
-            } catch(e) { 
-                console.error(e);
-                document.getElementById('btc').innerText = 'Error';
-                document.getElementById('eth').innerText = 'Error';
-            }
+            } catch(e) { console.error(e); }
+        }
+
+        async function updateSystemState() {
+            try {
+                const res = await fetch('/api/system-state');
+                const data = await res.json();
+                if(data.status === 'success') {
+                    document.getElementById('portfolioStatus').innerText = `Cash: $${data.portfolio.cash.toFixed(2)} | BTC: ${data.portfolio.btc.toFixed(4)}`;
+                    document.getElementById('eventLog').innerHTML = data.eventLogs.join('<br>');
+                }
+            } catch(e) { console.error(e); }
         }
 
         async function sendCmd() {
             const input = document.getElementById('cmdInput');
             const log = document.getElementById('cmdLog');
             if(!input.value) return;
-            log.innerHTML += `> ${input.value}<br>`;
+            
+            const commandText = input.value;
+            log.innerHTML += `> ${commandText}<br>`;
+            input.value = '';
+
             try {
                 const res = await fetch('/api/command', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({command: input.value})
+                    body: JSON.stringify({command: commandText})
                 });
                 const data = await res.json();
                 log.innerHTML += `${data.reply}<br>`;
+                
+                if(data.portfolio) {
+                    document.getElementById('portfolioStatus').innerText = `Cash: $${data.portfolio.cash.toFixed(2)} | BTC: ${data.portfolio.btc.toFixed(4)}`;
+                }
+                if(data.eventLogs) {
+                    document.getElementById('eventLog').innerHTML = data.eventLogs.join('<br>');
+                }
             } catch(e) {
                 log.innerHTML += `Error executing command.<br>`;
             }
-            input.value = '';
             log.scrollTop = log.scrollHeight;
         }
 
-        // Auto-refresh prices every 30 seconds
         setInterval(fetchPrices, 30000);
+        setInterval(updateSystemState, 10000);
         
-        // Fetch immediately on load
         fetchPrices();
+        updateSystemState();
     </script>
 </body>
 </html>
