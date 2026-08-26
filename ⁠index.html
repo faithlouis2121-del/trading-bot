@@ -16,10 +16,10 @@
         .metric-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; }
         .label { color: #88cc99; }
         .value { font-weight: bold; color: #fff; text-shadow: 0 0 5px rgba(255,255,255,0.5); }
-        .log-box { background: #000; border: 1px solid #114422; padding: 10px; height: 180px; overflow-y: auto; font-size: 0.75rem; color: #00cc55; margin-top: 10px; }
-        .command-input-container { display: flex; margin-top: 10px; gap: 10px; }
-        input[type="text"] { flex: 1; background: #000; border: 1px solid #00ff66; color: #00ff66; padding: 8px; font-family: 'Courier New', Courier, monospace; outline: none; }
-        button { background: #00ff66; color: #000; border: none; padding: 8px 15px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0,255,102,0.4); transition: 0.2s; }
+        .log-box { background: #000; border: 1px solid #114422; padding: 10px; height: 150px; overflow-y: auto; font-size: 0.75rem; color: #00cc55; margin-top: 10px; }
+        .search-box-wrapper { display: flex; gap: 10px; margin-top: 10px; }
+        input[type="text"] { flex: 1; background: #000; border: 1px solid #00ff66; color: #00ff66; padding: 10px; font-family: 'Courier New', Courier, monospace; outline: none; font-size: 0.9rem; }
+        button { background: #00ff66; color: #000; border: none; padding: 10px 20px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0,255,102,0.4); transition: 0.2s; }
         button:hover { background: #00cc55; box-shadow: 0 0 15px rgba(0,255,102,0.8); }
     </style>
 </head>
@@ -45,7 +45,7 @@
             <button onclick="fetchCryptoPrices()" style="width: 100%; margin-top: 10px;">REFRESH TICKERS</button>
         </div>
 
-        <!-- Execution Panel -->
+        <!-- Algorithm Status Panel -->
         <div class="terminal-panel">
             <h2>⚙️ ALGORITHM STATUS</h2>
             <div class="metric-row">
@@ -62,24 +62,35 @@
             </div>
         </div>
 
-        <!-- Terminal Logs & Command Panel -->
+        <!-- BRAND NEW STANDALONE COMMAND & SEARCH TERMINAL -->
+        <div class="terminal-panel" style="grid-column: 1 / -1; border-color: #00ffaa;">
+            <h2 style="color: #00ffaa;">💬 INTERACTIVE COMMAND & QUERY CONSOLE</h2>
+            <p style="font-size: 0.8rem; color: #88cc99; margin-bottom: 10px;">Type queries or commands below (e.g., /status, /help, /trade)</p>
+            
+            <div class="search-box-wrapper">
+                <input type="text" id="terminal-search-input" placeholder="Enter command or search query..." onkeydown="handleSearchKey(event)">
+                <button onclick="executeSearchTerminal()">EXECUTE</button>
+            </div>
+
+            <div class="log-box" id="search-terminal-logs">
+                [System Ready] Dedicated command terminal mounted successfully.<br>
+            </div>
+        </div>
+
+        <!-- System Event Logs Panel -->
         <div class="terminal-panel" style="grid-column: 1 / -1;">
-            <h2>🖥️ SYSTEM EVENT & COMMAND LOGS</h2>
-            <div class="log-box" id="terminal-logs">
+            <h2>🖥️ SYSTEM EVENT LOGS</h2>
+            <div class="log-box" id="event-logs">
                 [11:12:00] Initializing core socket connection...<br>
                 [11:12:02] Express server successfully mounted.<br>
                 [11:12:05] Secure route established with CoinGecko API feed.<br>
-            </div>
-            <div class="command-input-container">
-                <input type="text" id="command-input" placeholder="Type a command or query (e.g., /status, /trade)..." onkeydown="handleKeyPress(event)">
-                <button onclick="executeCommand()">SEND</button>
             </div>
         </div>
     </div>
 
     <script>
         async function fetchCryptoPrices() {
-            const logBox = document.getElementById('terminal-logs');
+            const eventLogs = document.getElementById('event-logs');
             try {
                 const response = await fetch('/api/crypto-prices');
                 const data = await response.json();
@@ -89,25 +100,25 @@
                     document.getElementById('eth-price').innerText = '$' + data.prices.ethereum.usd.toLocaleString();
                 }
             } catch (err) {
-                logBox.innerHTML += `[${new Date().toLocaleTimeString()}] Connection error fetching tickers.<br>`;
+                eventLogs.innerHTML += `[${new Date().toLocaleTimeString()}] Connection error fetching tickers.<br>`;
             }
-            logBox.scrollTop = logBox.scrollHeight;
+            eventLogs.scrollTop = eventLogs.scrollHeight;
         }
 
-        function handleKeyPress(event) {
+        function handleSearchKey(event) {
             if (event.key === 'Enter') {
-                executeCommand();
+                executeSearchTerminal();
             }
         }
 
-        async function executeCommand() {
-            const inputField = document.getElementById('command-input');
-            const logBox = document.getElementById('terminal-logs');
+        async function executeSearchTerminal() {
+            const inputField = document.getElementById('terminal-search-input');
+            const searchLogs = document.getElementById('search-terminal-logs');
             const command = inputField.value.trim();
             
             if (!command) return;
 
-            logBox.innerHTML += `[${new Date().toLocaleTimeString()}] > ${command}<br>`;
+            searchLogs.innerHTML += `[${new Date().toLocaleTimeString()}] > ${command}<br>`;
             inputField.value = '';
 
             try {
@@ -119,15 +130,15 @@
                 const data = await response.json();
                 
                 if (data.status === 'success') {
-                    logBox.innerHTML += `[${new Date().toLocaleTimeString()}] ${data.reply}<br>`;
+                    searchLogs.innerHTML += `[${new Date().toLocaleTimeString()}] ${data.reply}<br>`;
                 } else {
-                    logBox.innerHTML += `[${new Date().toLocaleTimeString()}] Error processing command.<br>`;
+                    searchLogs.innerHTML += `[${new Date().toLocaleTimeString()}] Error processing command.<br>`;
                 }
             } catch (err) {
-                logBox.innerHTML += `[${new Date().toLocaleTimeString()}] Network error reaching command server.<br>`;
+                searchLogs.innerHTML += `[${new Date().toLocaleTimeString()}] Network error reaching command server.<br>`;
             }
 
-            logBox.scrollTop = logBox.scrollHeight;
+            searchLogs.scrollTop = searchLogs.scrollHeight;
         }
 
         fetchCryptoPrices();
