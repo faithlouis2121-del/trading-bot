@@ -3,13 +3,9 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Middleware to parse JSON bodies from frontend requests
 app.use(express.json());
-
-// Serve static assets from the current directory
 app.use(express.static(path.join(__dirname)));
 
-// Live Crypto Feed Endpoint with Fallback Safety
 app.get('/api/crypto-prices', async (req, res) => {
     try {
         const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd');
@@ -41,27 +37,25 @@ app.get('/api/crypto-prices', async (req, res) => {
     }
 });
 
-// Custom Command & Conversational Logic Endpoint
 app.post('/api/command', (req, res) => {
     const { command } = req.body;
-    let responseMessage = "Command received. Processing logic...";
+    let responseMessage = "Command processed.";
 
     const cleanCmd = command ? command.trim().toLowerCase() : '';
 
     if (cleanCmd === '/status' || cleanCmd === 'status') {
-        responseMessage = "SYSTEM NORMAL: All algorithms, secure routing, and feeds are operating at peak efficiency.";
+        responseMessage = "SYSTEM NORMAL: All algorithms, secure routing, and feeds operational.";
     } else if (cleanCmd === '/help' || cleanCmd === 'help') {
         responseMessage = "AVAILABLE COMMANDS: /status, /trade, /portfolio, /clear";
     } else if (cleanCmd.startsWith('/trade')) {
-        responseMessage = "EXECUTION ENGINE: Paper trading mode active. Parameter validation required.";
+        responseMessage = "EXECUTION ENGINE: Paper trading command accepted.";
     } else {
-        responseMessage = `Echo from core logic: "${command}" parsed successfully. Ready for full flow integration.`;
+        responseMessage = `Terminal query received: "${command}". Core logic ready.`;
     }
 
     res.json({ status: 'success', reply: responseMessage });
 });
 
-// Explicit route for the homepage dashboard with anti-cache headers
 app.get('/', (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
